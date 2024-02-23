@@ -86,9 +86,6 @@ var host = new HostBuilder()
 
                     services.AddApplicationInsightsTelemetryWorkerService();
                     services.ConfigureFunctionsApplicationInsights();
-
-
-                    //TODO MOVE IT TO KEY VAULT
                     services.AddDbContext<DocumentInvoiceContext>(opt =>
                                 opt.UseSqlServer(dbConnectionString));
 
