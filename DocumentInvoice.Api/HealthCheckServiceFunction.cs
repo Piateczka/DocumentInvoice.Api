@@ -16,10 +16,13 @@ namespace DocumentInvoice.Api
         }
 
         [Function(nameof(HealthCheckServiceFunction))]
-        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "healthcheck")] HttpRequestData req)   
+        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "healthcheck")] HttpRequestData req)   
         {
             var healthStatus = await _healthCheck.CheckHealthAsync();
-            return new OkObjectResult(Enum.GetName(typeof(HealthStatus), healthStatus.Status));
+            var response = req.CreateResponse();
+            await response.WriteAsJsonAsync(Enum.GetName(typeof(HealthStatus), healthStatus.Status));
+
+            return response;
         }
     }
 }
