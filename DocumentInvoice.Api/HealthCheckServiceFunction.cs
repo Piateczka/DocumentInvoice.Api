@@ -16,7 +16,7 @@ namespace DocumentInvoice.Api
         }
 
         [Function(nameof(HealthCheckServiceFunction))]
-        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "healthcheck")] HttpRequestData req)   
+        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "check")] HttpRequestData req)   
         {
             var healthStatus = await _healthCheck.CheckHealthAsync();
             var response = req.CreateResponse();
