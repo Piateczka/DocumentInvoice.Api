@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 
 var host = new HostBuilder()
-                .ConfigureFunctionsWebApplication((hostContext, builder) =>
+                .ConfigureFunctionsWorkerDefaults((hostContext, builder) =>
                 {
                     builder.UseNewtonsoftJson();
                     builder.UseWhen<AuthenticationMiddleware>(functionContext =>
@@ -28,20 +28,16 @@ var host = new HostBuilder()
                 .ConfigureOpenApi()
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    var c = config.Build();
                     var credential = new ClientSecretCredential(
                         Environment.GetEnvironmentVariable("TenantId"),
                         Environment.GetEnvironmentVariable("ClientId"),
                         Environment.GetEnvironmentVariable("ClientSecret"));
                     config.AddAzureKeyVault(new Uri(Environment.GetEnvironmentVariable("VaultUrl")), credential, new DottableKeyVaultSecretManager());
-                    config.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-                        .AddEnvironmentVariables();
                 })
                 .ConfigureServices((context, services) =>
                 {
 
                     IConfiguration configuration = context.Configuration;
-                    var options = services.Configure<ApplicationSettings>(configuration.GetSection(nameof(ApplicationSettings)));
                     var credential = new ClientSecretCredential(
                         Environment.GetEnvironmentVariable("TenantId"),
                         Environment.GetEnvironmentVariable("ClientId"),
@@ -96,4 +92,4 @@ var host = new HostBuilder()
                 })
                 .Build();
 
-await host.RunAsync();
+host.Run();
