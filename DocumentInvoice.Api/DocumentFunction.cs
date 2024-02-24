@@ -50,6 +50,11 @@ namespace DocumentInvoice.Api
                 return response;
             }
 
+            if (context.IsAccountant())
+            {
+                return req.CreateResponse(HttpStatusCode.Forbidden);
+            }
+
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             var file = parsedFormBody.Files.First();
             IFormFile formFile = new StreamFormFile(file.Data, file.FileName, file.ContentType);
@@ -177,7 +182,7 @@ namespace DocumentInvoice.Api
                 return response;
             }
             var request = new GetDocumentsQuery();
-            request.IsAdmin = context.IsAdmin();
+            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
             if (!request.IsAdmin)
             {
                 request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
@@ -213,7 +218,7 @@ namespace DocumentInvoice.Api
             }
             var request = new GetDocumentQuery();
             request.DocumentId = id;
-            request.IsAdmin = context.IsAdmin();
+            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
             if (!request.IsAdmin)
             {
                 request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
@@ -248,6 +253,12 @@ namespace DocumentInvoice.Api
                 await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
                 return response;
             }
+
+            if (context.IsAccountant())
+            {
+                return req.CreateResponse(HttpStatusCode.Forbidden);
+            }
+
             var request = new DeleteDocumentCommand();
             request.DocumentId = id;
             request.IsAdmin = context.IsAdmin();
@@ -283,6 +294,11 @@ namespace DocumentInvoice.Api
             {
                 await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
                 return response;
+            }
+
+            if (context.IsAccountant())
+            {
+                return req.CreateResponse(HttpStatusCode.Forbidden);
             }
 
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
@@ -333,7 +349,7 @@ namespace DocumentInvoice.Api
                 return response;
             }
 
-            if (!context.IsAdmin())
+            if (context.IsUser())
             {
                 return req.CreateResponse(HttpStatusCode.Forbidden);
             }
@@ -373,7 +389,7 @@ namespace DocumentInvoice.Api
             {
                 Query = req.Query["Query"]
             };
-            request.IsAdmin = context.IsAdmin();
+            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
             if (!request.IsAdmin)
             {
                 request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
@@ -417,7 +433,7 @@ namespace DocumentInvoice.Api
                 Month = int.TryParse(req.Query["Month"], out month) ? month : 0,
                 Year = int.TryParse(req.Query["Year"], out year) ? year : 0
             };
-            request.IsAdmin = context.IsAdmin();
+            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
             if (!request.IsAdmin)
             {
                 request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();

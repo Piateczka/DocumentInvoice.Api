@@ -47,6 +47,7 @@ namespace DocumentInvoice.Api
             {
                 return req.CreateResponse(HttpStatusCode.Forbidden);
             }
+
             var requestBody = await req.ReadAsStringAsync();
             var request = JsonConvert.DeserializeObject<CreateUserCommand>(requestBody);
             var result = await _mediator.Send(request);
