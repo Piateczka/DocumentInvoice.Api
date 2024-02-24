@@ -74,9 +74,11 @@ var host = new HostBuilder()
                         loggingBuilder.AddApplicationInsights(
                             configureTelemetryConfiguration: (config) =>
                                 config.ConnectionString = applicationInsightsConnectionString,
-                                configureApplicationInsightsLoggerOptions: (options) => { }
+                                configureApplicationInsightsLoggerOptions: (options) => 
+                                {
+                                    options.TrackExceptionsAsExceptionTelemetry = true;
+                                }
                             );
-                        loggingBuilder.AddFilter<ApplicationInsightsLoggerProvider>("DocumentInvoice.Api", LogLevel.Trace);
                     });
 
                     services.AddApplicationInsightsTelemetryWorkerService();
