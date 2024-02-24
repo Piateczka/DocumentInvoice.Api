@@ -10,4 +10,5 @@ public class DocumentSearch
     [JsonPropertyName("id")]
     [SimpleField]
     public string Id { get; set; }
+    public int DocumentId { get; set; }
 }

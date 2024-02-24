@@ -23,6 +23,7 @@ public class DocumentInvoiceContext : DbContext
     public DbSet<UserCompaniesAccess> UserCompaniesAccess { get; set; }
     public DbSet<Invoices> Invoices { get; set; }
     public DbSet<InvoiceItems> InvoiceItems { get; set; }
+    public DbSet<DocumentTag> DocumentTag { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,7 @@ public class DocumentInvoiceContext : DbContext
             .HasOne(p => p.Customer)
             .WithMany()
             .HasForeignKey(p => p.CompanyId);
+
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
