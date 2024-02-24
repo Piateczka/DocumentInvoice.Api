@@ -19,6 +19,34 @@ namespace DocumentInvoice.Api
             return role == "Admin";
         }
 
+        public static bool IsAccountant(this FunctionContext context)
+        {
+            if (!context.Items.ContainsKey("role"))
+            {
+                return false;
+            }
+            if (context.Items["role"] is not string role)
+            {
+                return false;
+            }
+
+            return role == "Accountant";
+        }
+
+        public static bool IsUser(this FunctionContext context)
+        {
+            if (!context.Items.ContainsKey("role"))
+            {
+                return false;
+            }
+            if (context.Items["role"] is not string role)
+            {
+                return false;
+            }
+
+            return role == "User";
+        }
+
         public static bool IsAuthenticated(this FunctionContext context)
         {
             if (!context.Items.ContainsKey("isAuthenticated"))

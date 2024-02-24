@@ -39,18 +39,23 @@ namespace DocumentInvoice.Api
             {
                 foreach (var innerException in aggregateException.InnerExceptions)
                 {
-                    if (innerException is NotFoundApiException)
+                    switch (innerException)
                     {
-                        await res.WriteAsJsonAsync(innerException.Message, HttpStatusCode.NotFound);
-                        context.GetInvocationResult().Value = res;
-                        return; // Return to avoid processing other inner exceptions
+                        case NotFoundApiException:
+                            await res.WriteAsJsonAsync(innerException.Message, HttpStatusCode.NotFound);
+                            context.GetInvocationResult().Value = res;
+                            break;
+                        case InvalidOperationException:
+                            await res.WriteAsJsonAsync(innerException.Message, HttpStatusCode.MethodNotAllowed);
+                            context.GetInvocationResult().Value = res;
+                            break;
+                        default:
+                            await res.WriteAsJsonAsync(innerException.Message, HttpStatusCode.InternalServerError);
+                            context.GetInvocationResult().Value = res;
+                            break;
                     }
-                    if (innerException is InvalidOperationException)
-                    {
-                        await res.WriteAsJsonAsync(innerException.Message, HttpStatusCode.MethodNotAllowed);
-                        context.GetInvocationResult().Value = res;
-                        return; // Return to avoid processing other inner exceptions
-                    }
+
+                    return;
                 }
             }
             else

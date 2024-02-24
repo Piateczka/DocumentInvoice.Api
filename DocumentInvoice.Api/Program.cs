@@ -47,12 +47,11 @@ var host = new HostBuilder()
                     var dbConnectionString = configuration["ApplicationSettings:DbConnectionString"];
                     var searchServiceEndpoint = configuration["ApplicationSettings:SearchServiceEndpoint"];
                     var searchApiKey = configuration["ApplicationSettings:SearchApiKey"];
-                    var index = configuration["ApplicationSettings:IndexName"];
+                    var documentIndex = configuration["ApplicationSettings:DocumentIndex"];
                     services.AddAzureClients(options =>
                     {
-
                         options.UseCredential(credential);
-                        options.AddSearchClient(new Uri(searchServiceEndpoint), index, new AzureKeyCredential(searchApiKey));
+                        options.AddSearchClient(new Uri(searchServiceEndpoint), documentIndex, new AzureKeyCredential(searchApiKey));
                         options.AddBlobServiceClient(blobConnectionString);
                     });
 
@@ -77,7 +76,7 @@ var host = new HostBuilder()
                                 config.ConnectionString = applicationInsightsConnectionString,
                                 configureApplicationInsightsLoggerOptions: (options) => { }
                             );
-                        loggingBuilder.AddFilter<ApplicationInsightsLoggerProvider>("DocumentInvoice.Api", LogLevel.Information);
+                        loggingBuilder.AddFilter<ApplicationInsightsLoggerProvider>("DocumentInvoice.Api", LogLevel.Trace);
                     });
 
                     services.AddApplicationInsightsTelemetryWorkerService();

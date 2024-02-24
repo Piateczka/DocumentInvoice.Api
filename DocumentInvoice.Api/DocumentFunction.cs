@@ -33,7 +33,6 @@ namespace DocumentInvoice.Api
             operationId: "upload.document",
             tags: new[] { "Document" },
             Summary = "Upload document",
-            Description = "Uploads a document with bearer authentication token flow via header",
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -50,11 +49,6 @@ namespace DocumentInvoice.Api
                 await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
                 return response;
             }
-
-            //if (!context.IsInRole("User") || !context.IsInRole("Admin"))
-            //{
-            //    return req.CreateResponse(HttpStatusCode.Forbidden);
-            //}
 
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             var file = parsedFormBody.Files.First();
@@ -75,12 +69,98 @@ namespace DocumentInvoice.Api
             return response;
         }
 
+        [Function(nameof(AddTagsToDocument))]
+        [OpenApiOperation(
+            operationId: "add.tags.document",
+            tags: new[] { "Document" },
+            Summary = "Add tags to document",
+            Visibility = OpenApiVisibilityType.Important
+        )]
+        [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+        [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(string[]), Required = true, Description = "Tags data")]
+        [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(int), Description = "ID of the document")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        public async Task<HttpResponseData> AddTagsToDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document/{id:int}")] HttpRequestData req, int id,
+            FunctionContext context)
+        {
+            var response = req.CreateResponse();
+            if (!context.IsAuthenticated())
+            {
+                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
+                return response;
+            }
+
+            if (context.IsUser())
+            {
+                return req.CreateResponse(HttpStatusCode.Forbidden);
+            }
+
+            var requestBody = await req.ReadAsStringAsync();
+            var tags = JsonConvert.DeserializeObject<string[]>(requestBody);
+            var request = new CreateTagsCommand
+            {
+                DocumentId = id,
+                Tags = tags
+            };
+            var result = await _mediator.Send(request);
+            await response.WriteAsJsonAsync(result);
+
+            return response;
+        }
+
+        [Function(nameof(RemoveTagsFromDocument))]
+        [OpenApiOperation(
+            operationId: "remove.tags.document",
+            tags: new[] { "Document" },
+            Summary = "Remove tags to document",
+            Visibility = OpenApiVisibilityType.Important
+        )]
+        [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+        [OpenApiParameter(name: "tagId", In = ParameterLocation.Path, Required = true, Type = typeof(int), Description = "ID of the tag")]
+        [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(int), Description = "ID of the document")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        public async Task<HttpResponseData> RemoveTagsFromDocument([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "document/{id:int}/tag/{tagId:int}")] HttpRequestData req, int id, 
+            int tagId, FunctionContext context)
+        {
+            var response = req.CreateResponse();
+            if (!context.IsAuthenticated())
+            {
+                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
+                return response;
+            }
+
+            if (context.IsUser())
+            {
+                return req.CreateResponse(HttpStatusCode.Forbidden);
+            }
+
+            var request = new DeleteTagDocumentCommand
+            {
+                DocumentId = id,
+                TagId = tagId
+            };
+
+            request.IsAdmin = context.IsAdmin();
+            if (!request.IsAdmin)
+            {
+                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
+            }
+
+            var result = await _mediator.Send(request);
+            await response.WriteAsJsonAsync(result);
+
+            return response;
+        }
+
         [Function(nameof(GetListDocuments))]
         [OpenApiOperation(
-            operationId: "get.document",
+            operationId: "get.documents",
             tags: new[] { "Document" },
             Summary = "Retrieve documents",
-            Description = "Retrieves a documents with bearer authentication token flow via header",
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -115,7 +195,6 @@ namespace DocumentInvoice.Api
             operationId: "get.document",
             tags: new[] { "Document" },
             Summary = "Retrieve document by ID",
-            Description = "Retrieves a document by its ID with bearer authentication token flow via header",
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -153,7 +232,6 @@ namespace DocumentInvoice.Api
             operationId: "delete.document",
             tags: new[] { "Document" },
             Summary = "Delete document by ID",
-            Description = "Deletes a document by its ID with bearer authentication token flow via header",
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -190,7 +268,6 @@ namespace DocumentInvoice.Api
             operationId: "update.document",
             tags: new[] { "Document" },
             Summary = "Update document information",
-            Description = "Updates document information with bearer authentication token flow via header",
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -237,7 +314,6 @@ namespace DocumentInvoice.Api
           operationId: "verification.document",
           tags: new[] { "Document" },
           Summary = "Verify document",
-          Description = "Verifies document information with bearer authentication token flow via header",
           Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
@@ -280,7 +356,7 @@ namespace DocumentInvoice.Api
             Visibility = OpenApiVisibilityType.Important
         )]
         [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
-        [OpenApiParameter(name: "q", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "Value to search")]
+        [OpenApiParameter(name: "Query", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "Value to search")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentResponse>), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
@@ -295,7 +371,51 @@ namespace DocumentInvoice.Api
             }
             var request = new SearchDocumentQuery()
             {
-                Query = req.Query["q"]
+                Query = req.Query["Query"]
+            };
+            request.IsAdmin = context.IsAdmin();
+            if (!request.IsAdmin)
+            {
+                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
+            }
+            var result = await _mediator.Send(request);
+
+            await response.WriteAsJsonAsync(result);
+
+            return response;
+        }
+
+        [Function(nameof(FilterDocument))]
+        [OpenApiOperation(
+            operationId: "filter.document",
+            tags: new[] { "Document" },
+            Summary = "Filter document",
+            Description = "Filterh document",
+            Visibility = OpenApiVisibilityType.Important
+        )]
+        [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+        [OpenApiParameter(name: "Tag", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "Tag to search")]
+        [OpenApiParameter(name: "Month", In = ParameterLocation.Query, Required = false, Type = typeof(int?), Description = "Month to search")]
+        [OpenApiParameter(name: "Year", In = ParameterLocation.Query, Required = false, Type = typeof(int?), Description = "Year to search")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentResponse>), Description = "The OK response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        public async Task<HttpResponseData> FilterDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/filter")] HttpRequestData req,
+            FunctionContext context)
+        {
+            var response = req.CreateResponse();
+            if (!context.IsAuthenticated())
+            {
+                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
+                return response;
+            }
+            int month;
+            int year;
+            var request = new FilterDocumentQuery()
+            {
+                Tag = req.Query["Tag"],
+                Month = int.TryParse(req.Query["Month"], out month) ? month : 0,
+                Year = int.TryParse(req.Query["Year"], out year) ? year : 0
             };
             request.IsAdmin = context.IsAdmin();
             if (!request.IsAdmin)

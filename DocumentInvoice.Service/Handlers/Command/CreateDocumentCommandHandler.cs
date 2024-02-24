@@ -53,13 +53,6 @@ public class CreateDocumentCommandHandler : IRequestHandler<CreateDocumentComman
             HttpHeaders = new BlobHttpHeaders { ContentType = request.File.ContentType }
         });
 
-        var storageAccount = CloudStorageAccount.Parse(_configuration.BlobConnectionString);
-        var queueClient = storageAccount.CreateCloudQueueClient();
-        var queue = queueClient.GetQueueReference("documenttoprocess");
-        await queue.CreateIfNotExistsAsync();
-        var message = new CloudQueueMessage(documentFileName);
-        await queue.AddMessageAsync(message);
-
         BlobSasBuilder sasBuilder = new BlobSasBuilder()
         {
             BlobContainerName = _configuration.ContainerName,
@@ -72,7 +65,6 @@ public class CreateDocumentCommandHandler : IRequestHandler<CreateDocumentComman
         sasBuilder.SetPermissions(BlobSasPermissions.Read);
         string sasToken = sasBuilder.ToSasQueryParameters(storageCrdentials).ToString();
 
-
         UriBuilder fulluri = new UriBuilder()
         {
             Scheme = "https",
@@ -80,6 +72,13 @@ public class CreateDocumentCommandHandler : IRequestHandler<CreateDocumentComman
             Path = string.Format("{0}/{1}", _configuration.ContainerName, documentFileName),
             Query = sasToken
         };
+
+        var storageAccount = CloudStorageAccount.Parse(_configuration.BlobConnectionString);
+        var queueClient = storageAccount.CreateCloudQueueClient();
+        var queue = queueClient.GetQueueReference("documenttoprocess");
+        await queue.CreateIfNotExistsAsync();
+        var message = new CloudQueueMessage(documentFileName);
+        await queue.AddMessageAsync(message);
 
         return new DocumentResponse
         {

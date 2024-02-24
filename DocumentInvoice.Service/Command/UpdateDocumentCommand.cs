@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace DocumentInvoice.Service.Command;
 
-public class UpdateDocumentCommand : IRequest<DocumentResponse>
+public class UpdateDocumentCommand : BaseRequest<DocumentResponse>
 {
     public int Id { get; set; }
     public IFormFile File { get; set; }
@@ -13,6 +13,4 @@ public class UpdateDocumentCommand : IRequest<DocumentResponse>
     public DocumentCategory DocumentCategory { get; set; }
     public string Month { get; set; }
     public string Year { get; set; }
-    public List<int>? CompanyId { get; set; }
-    public bool IsAdmin { get; set; }
 }

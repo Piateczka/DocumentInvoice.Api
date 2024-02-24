@@ -3,8 +3,6 @@ using MediatR;
 
 namespace DocumentInvoice.Service.Query;
 
-public class GetDocumentsQuery : IRequest<List<DocumentResponse>>
+public class GetDocumentsQuery : BaseRequest<List<DocumentResponse>>
 {
-    public List<int>? CompanyId { get; set; }
-    public bool IsAdmin { get; set; }
 }
