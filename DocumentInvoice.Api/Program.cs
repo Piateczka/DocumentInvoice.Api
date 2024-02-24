@@ -48,12 +48,10 @@ var host = new HostBuilder()
                     var searchServiceEndpoint = configuration["ApplicationSettings:SearchServiceEndpoint"];
                     var searchApiKey = configuration["ApplicationSettings:SearchApiKey"];
                     var documentIndex = configuration["ApplicationSettings:DocumentIndex"];
-                    var tagsIndex = configuration["ApplicationSettings:TagsIndex"];
                     services.AddAzureClients(options =>
                     {
                         options.UseCredential(credential);
                         options.AddSearchClient(new Uri(searchServiceEndpoint), documentIndex, new AzureKeyCredential(searchApiKey));
-                        options.AddSearchClient(new Uri(searchServiceEndpoint), tagsIndex, new AzureKeyCredential(searchApiKey));
                         options.AddBlobServiceClient(blobConnectionString);
                     });
 

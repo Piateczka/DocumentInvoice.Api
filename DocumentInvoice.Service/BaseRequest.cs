@@ -2,7 +2,7 @@
 
 namespace DocumentInvoice.Service
 {
-    public abstract class Base<TResponse> : IRequest<TResponse>
+    public abstract class BaseRequest<TResponse> : IRequest<TResponse>
     {
         public List<int>? CompanyId { get; set; }
         public bool IsAdmin { get; set; }

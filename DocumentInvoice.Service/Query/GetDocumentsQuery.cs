@@ -3,6 +3,6 @@ using MediatR;
 
 namespace DocumentInvoice.Service.Query;
 
-public class GetDocumentsQuery : Base<List<DocumentResponse>>
+public class GetDocumentsQuery : BaseRequest<List<DocumentResponse>>
 {
 }

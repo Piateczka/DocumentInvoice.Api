@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace DocumentInvoice.Service.Command;
 
-public class UpdateDocumentCommand : Base<DocumentResponse>
+public class UpdateDocumentCommand : BaseRequest<DocumentResponse>
 {
     public int Id { get; set; }
     public IFormFile File { get; set; }

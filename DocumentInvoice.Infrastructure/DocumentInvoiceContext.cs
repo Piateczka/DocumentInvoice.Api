@@ -45,7 +45,6 @@ public class DocumentInvoiceContext : DbContext
             .HasOne(p => p.Customer)
             .WithMany()
             .HasForeignKey(p => p.CompanyId);
-
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

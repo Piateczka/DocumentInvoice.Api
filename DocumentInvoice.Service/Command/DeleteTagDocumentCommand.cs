@@ -2,7 +2,7 @@
 
 namespace DocumentInvoice.Service.Command
 {
-    public class DeleteTagDocumentCommand : Base<Unit>
+    public class DeleteTagDocumentCommand : BaseRequest<Unit>
     {
         public int DocumentId { get; set; }
         public int TagId { get; set; }

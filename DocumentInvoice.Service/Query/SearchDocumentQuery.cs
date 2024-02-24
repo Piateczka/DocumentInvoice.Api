@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DocumentInvoice.Service.Query;
 
-public class SearchDocumentQuery : Base<List<DocumentResponse>>
+public class SearchDocumentQuery : BaseRequest<List<DocumentResponse>>
 {
     public string Query { get; set; }
 }
