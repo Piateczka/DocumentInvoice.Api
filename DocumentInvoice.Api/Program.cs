@@ -68,15 +68,15 @@ var host = new HostBuilder()
                          return options;
                      });
 
-                    services.AddLogging(loggingBuilder =>
-                    {
-                        loggingBuilder.ClearProviders();
-                        loggingBuilder.AddApplicationInsights(
-                            configureTelemetryConfiguration: (config) =>
-                                config.ConnectionString = applicationInsightsConnectionString,
-                                configureApplicationInsightsLoggerOptions: (options) => { }
-                            );
-                    });
+                    //services.AddLogging(loggingBuilder =>
+                    //{
+                    //    loggingBuilder.ClearProviders();
+                    //    loggingBuilder.AddApplicationInsights(
+                    //        configureTelemetryConfiguration: (config) =>
+                    //            config.ConnectionString = applicationInsightsConnectionString,
+                    //            configureApplicationInsightsLoggerOptions: (options) => { }
+                    //        );
+                    //});
 
                     services.AddApplicationInsightsTelemetryWorkerService();
                     services.ConfigureFunctionsApplicationInsights();
