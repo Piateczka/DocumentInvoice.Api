@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-
-namespace DocumentInvoice.Service.DTO
+﻿namespace DocumentInvoice.Service.DTO
 {
     public class DocumentCreate
     {
