@@ -4,7 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Function
 {
     public class HealthCheckServiceFunction
     {
@@ -16,7 +16,7 @@ namespace DocumentInvoice.Api
         }
 
         [Function(nameof(HealthCheckServiceFunction))]
-        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "check")] HttpRequestData req)   
+        public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "check")] HttpRequestData req)
         {
             var healthStatus = await _healthCheck.CheckHealthAsync();
             var response = req.CreateResponse();

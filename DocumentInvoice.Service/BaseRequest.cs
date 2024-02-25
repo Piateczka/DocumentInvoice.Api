@@ -1,10 +1,10 @@
-﻿using MediatR;
+﻿using DocumentInvoice.Service.DTO;
+using MediatR;
 
 namespace DocumentInvoice.Service
 {
     public abstract class BaseRequest<TResponse> : IRequest<TResponse>
     {
-        public List<int>? CompanyId { get; set; }
-        public bool IsAdmin { get; set; }
+        public RBACInfo RBACInfo { get; set; }
     }
 }

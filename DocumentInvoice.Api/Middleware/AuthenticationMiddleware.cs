@@ -1,14 +1,17 @@
-﻿using DocumentInvoice.Domain;
+﻿using DocumentInvoice.Api.Extensions;
+using DocumentInvoice.Domain;
 using DocumentInvoice.Infrastructure;
 using DocumentInvoice.Infrastructure.Repository;
+using DocumentInvoice.Service.DTO;
 using Google.Apis.Auth;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Reflection;
 using System.Text.Json;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Middleware
 {
     public class AuthenticationMiddleware : IFunctionsWorkerMiddleware
     {
@@ -25,19 +28,19 @@ namespace DocumentInvoice.Api
         public async Task Invoke(
             FunctionContext context, FunctionExecutionDelegate next)
         {
-            //TODO FunctionContext -> Claims Identity
             if (IsHttpRequest(context))
             {
                 if (!TryGetTokenFromHeaders(context, out var token))
                 {
-                    await next(context);
+                    context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
+                    return;
                 }
                 try
                 {
                     var payload = await GoogleJsonWebSignature.ValidateAsync(token);
 
                     var user = _userRepository.Query
-                                .Include(x=>x.Role)
+                                .Include(x => x.Role)
                                 .Include(x => x.UserAccessList)
                                 .ThenInclude(y => y.Company)
                                 .FirstOrDefault(c => c.Email == payload.Email);
@@ -47,10 +50,13 @@ namespace DocumentInvoice.Api
                         return;
                     }
 
-                    context.Items.Add("role", user.Role.Name);
-                    context.Items.Add("email", payload.Email);
-                    context.Items.Add("user", user);
-                    context.Items.Add("isAuthenticated", true);
+                    var isAdminOrAccountant = user.Role.Name == "Admin" || user.Role.Name == "Accountant";
+                    var userCompanyIdList = user.UserAccessList.Select(x => x.CompanyId).ToList();
+                    context.Items["RBACInfo"] = new RBACInfo
+                    {
+                        IsAdminOrAccountant = isAdminOrAccountant,
+                        UserCompanyIdList = isAdminOrAccountant ? null : userCompanyIdList
+                    };
 
                     await next(context);
                 }

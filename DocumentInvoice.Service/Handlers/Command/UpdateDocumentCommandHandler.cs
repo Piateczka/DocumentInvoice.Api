@@ -28,13 +28,13 @@ public class UpdateDocumentCommandHandler : IRequestHandler<UpdateDocumentComman
     public async Task<DocumentResponse> Handle(UpdateDocumentCommand request, CancellationToken cancellationToken)
     {
         Document document = null;
-        if (request.IsAdmin)
+        if (request.RBACInfo.IsAdminOrAccountant)
         {
             document = _documentRepository.Query.FirstOrDefault(x => x.Id == request.Id);
         }
         else
         {
-            document = _documentRepository.Query.FirstOrDefault(x => x.Id == request.Id && request.CompanyId.Contains(x.Customer.Id));
+            document = _documentRepository.Query.FirstOrDefault(x => x.Id == request.Id && request.RBACInfo.UserCompanyIdList.Contains(x.Customer.Id));
         }
 
         if (document == null)

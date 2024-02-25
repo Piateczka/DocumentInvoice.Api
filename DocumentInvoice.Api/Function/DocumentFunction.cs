@@ -1,4 +1,5 @@
-﻿using DocumentInvoice.Service;
+﻿using DocumentInvoice.Api.Extensions;
+using DocumentInvoice.Service;
 using DocumentInvoice.Service.Command;
 using DocumentInvoice.Service.DTO;
 using DocumentInvoice.Service.Enums;
@@ -15,7 +16,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System.Net;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Function
 {
     public class DocumentFunction
     {
@@ -40,21 +41,9 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(DocumentResponse), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
-        public async Task<HttpResponseData> UploadDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document")] HttpRequestData req,
-            FunctionContext context)
+        [Authorize(UserRoles = new[] { "User", "Admin" })]
+        public async Task<HttpResponseData> UploadDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document")] HttpRequestData req)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsAccountant())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             var file = parsedFormBody.Files.First();
             IFormFile formFile = new StreamFormFile(file.Data, file.FileName, file.ContentType);
@@ -69,6 +58,7 @@ namespace DocumentInvoice.Api
                 File = formFile
             };
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -87,21 +77,9 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
-        public async Task<HttpResponseData> AddTagsToDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document/{id:int}")] HttpRequestData req, int id,
-            FunctionContext context)
+        [Authorize(UserRoles = new[] { "Accountant", "Admin" })]
+        public async Task<HttpResponseData> AddTagsToDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document/{id:int}")] HttpRequestData req, int id)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsUser())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var requestBody = await req.ReadAsStringAsync();
             var tags = JsonConvert.DeserializeObject<string[]>(requestBody);
             var request = new CreateTagsCommand
@@ -110,6 +88,7 @@ namespace DocumentInvoice.Api
                 Tags = tags
             };
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -128,34 +107,18 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string[]), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
-        public async Task<HttpResponseData> RemoveTagsFromDocument([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "document/{id:int}/tag/{tagId:int}")] HttpRequestData req, int id, 
+        [Authorize(UserRoles = new[] { "Accountant", "Admin" })]
+        public async Task<HttpResponseData> RemoveTagsFromDocument([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "document/{id:int}/tag/{tagId:int}")] HttpRequestData req, int id,
             int tagId, FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsUser())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var request = new DeleteTagDocumentCommand
             {
                 DocumentId = id,
                 TagId = tagId
             };
 
-            request.IsAdmin = context.IsAdmin();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
-
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -175,21 +138,11 @@ namespace DocumentInvoice.Api
         public async Task<HttpResponseData> GetListDocuments([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "documentList")] HttpRequestData req,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
             var request = new GetDocumentsQuery();
-            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
-
-
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -210,23 +163,14 @@ namespace DocumentInvoice.Api
         public async Task<HttpResponseData> GetDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/{id:int}")] HttpRequestData req, int id,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
             var request = new GetDocumentQuery();
             request.DocumentId = id;
-            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
-
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
 
             var result = await _mediator.Send(request);
 
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -244,32 +188,19 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.NoContent, contentType: "application/json", bodyType: typeof(Unit), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin" })]
         public async Task<HttpResponseData> DeleteDocument([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "document/{id:int}")] HttpRequestData req, int id,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsAccountant())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var request = new DeleteDocumentCommand();
             request.DocumentId = id;
-            request.IsAdmin = context.IsAdmin();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
 
             var result = await _mediator.Send(request);
 
-            await response.WriteAsJsonAsync("Document deleted", HttpStatusCode.NoContent);
+            var response = req.CreateResponse();
+            await req.CreateResponse().WriteAsJsonAsync("Document deleted", HttpStatusCode.NoContent);
 
             return response;
         }
@@ -286,21 +217,10 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(DocumentResponse), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin" })]
         public async Task<HttpResponseData> UpdateDocument([HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "document")] HttpRequestData req,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsAccountant())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             var file = parsedFormBody.Files.First();
             IFormFile formFile = new StreamFormFile(file.Data, file.FileName, file.ContentType);
@@ -314,18 +234,16 @@ namespace DocumentInvoice.Api
                 Id = int.Parse(parsedFormBody.GetParameterValue("documentId")),
 
             };
-            request.IsAdmin = context.IsAdmin();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
-
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
         }
 
+        [Function(nameof(VerificationDocument))]
         [OpenApiOperation(
           operationId: "verification.document",
           tags: new[] { "Document" },
@@ -337,27 +255,14 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(bool), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
-
-        [Function(nameof(VerificationDocument))]
-        public async Task<HttpResponseData> VerificationDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document/verification")] HttpRequestData req, string id,
-            FunctionContext context)
+        [Authorize(UserRoles = new[] { "Accountant", "Admin" })]
+        public async Task<HttpResponseData> VerificationDocument([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "document/verification")] HttpRequestData req, string id)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (context.IsUser())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var requestBody = await req.ReadAsStringAsync();
             var request = JsonConvert.DeserializeObject<AcceptDocumentCommand>(requestBody);
             var result = await _mediator.Send(request);
 
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -379,23 +284,15 @@ namespace DocumentInvoice.Api
         public async Task<HttpResponseData> SearchDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/search")] HttpRequestData req,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
             var request = new SearchDocumentQuery()
             {
                 Query = req.Query["Query"]
             };
-            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
             var result = await _mediator.Send(request);
 
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;
@@ -419,12 +316,6 @@ namespace DocumentInvoice.Api
         public async Task<HttpResponseData> FilterDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/filter")] HttpRequestData req,
             FunctionContext context)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
             int month;
             int year;
             var request = new FilterDocumentQuery()
@@ -433,13 +324,11 @@ namespace DocumentInvoice.Api
                 Month = int.TryParse(req.Query["Month"], out month) ? month : 0,
                 Year = int.TryParse(req.Query["Year"], out year) ? year : 0
             };
-            request.IsAdmin = context.IsAdmin() || context.IsAccountant();
-            if (!request.IsAdmin)
-            {
-                request.CompanyId = context.GetUserInfo().UserAccessList.Select(x => x.CompanyId).ToList();
-            }
+            var rbacInfo = context.Items["RBACInfo"] as RBACInfo;
+            request.RBACInfo = rbacInfo;
             var result = await _mediator.Send(request);
 
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;

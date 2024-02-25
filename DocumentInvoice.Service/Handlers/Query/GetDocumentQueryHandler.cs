@@ -31,7 +31,7 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
 
         BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_configuration.ContainerName);
         Document document = null;
-        if (request.IsAdmin)
+        if (request.RBACInfo.IsAdminOrAccountant)
         {
             document = await _documentRepository.Query.Include(x => x.Customer)
                                 .FirstOrDefaultAsync(x => x.Id == request.DocumentId);
@@ -39,7 +39,7 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
         else
         {
             document = await _documentRepository.Query.Include(x => x.Customer)
-                    .FirstOrDefaultAsync(x => request.CompanyId.Contains(x.CompanyId) && x.Id == request.DocumentId);
+                    .FirstOrDefaultAsync(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId) && x.Id == request.DocumentId);
         }
 
         if (document == null)

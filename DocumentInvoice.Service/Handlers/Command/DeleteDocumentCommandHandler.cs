@@ -24,7 +24,7 @@ public class DeleteDocumentCommandHandler : IRequestHandler<DeleteDocumentComman
     public async Task<Unit> Handle(DeleteDocumentCommand request, CancellationToken cancellationToken)
     {
         Document document = null;
-        if (request.IsAdmin)
+        if (request.RBACInfo.IsAdminOrAccountant)
         {
             document = await _documentRepository.Query
                 .FirstOrDefaultAsync(x => x.Id == request.DocumentId);
@@ -32,7 +32,7 @@ public class DeleteDocumentCommandHandler : IRequestHandler<DeleteDocumentComman
         else
         {
             document = await _documentRepository.Query
-                .FirstOrDefaultAsync(x => request.CompanyId.Contains(x.CompanyId) && x.Id == request.DocumentId);
+                .FirstOrDefaultAsync(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId) && x.Id == request.DocumentId);
         }
 ;
 

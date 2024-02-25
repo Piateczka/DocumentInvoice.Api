@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Extensions
 {
     internal static class WorkerConfigurationExtensions
     {

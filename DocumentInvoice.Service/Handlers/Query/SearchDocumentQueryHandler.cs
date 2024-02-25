@@ -32,7 +32,7 @@ public class SearchDocumentQueryHandler : IRequestHandler<SearchDocumentQuery, L
 
         var documentIds = response.GetResults().Select(x => int.Parse(x.Document.Id)).ToList();
         List< DocumentResponse> documents = null;
-        if(request.IsAdmin)
+        if(request.RBACInfo.IsAdminOrAccountant)
         {
             documents = await _documentRepository.Query.Where(x => documentIds.Contains(x.Id)).Select(x => new DocumentResponse
             {
@@ -45,7 +45,7 @@ public class SearchDocumentQueryHandler : IRequestHandler<SearchDocumentQuery, L
         }
         else
         {
-            documents = await _documentRepository.Query.Where(x => documentIds.Contains(x.Id) && request.CompanyId.Contains(x.Customer.Id)).Select(x => new DocumentResponse
+            documents = await _documentRepository.Query.Where(x => documentIds.Contains(x.Id) && request.RBACInfo.UserCompanyIdList.Contains(x.Customer.Id)).Select(x => new DocumentResponse
             {
                 Id = x.Id,
                 Commnet = x.Comment,

@@ -1,12 +1,10 @@
 ﻿using Azure.Storage.Blobs;
-using DocumentInvoice.Infrastructure.Repository;
+using DocumentInvoice.Domain;
 using DocumentInvoice.Infrastructure;
+using DocumentInvoice.Infrastructure.Repository;
 using DocumentInvoice.Service.Command;
 using MediatR;
-using DocumentInvoice.Domain;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata;
-using System.Xml.Linq;
 
 namespace DocumentInvoice.Service.Handlers.Command
 {
@@ -23,16 +21,9 @@ namespace DocumentInvoice.Service.Handlers.Command
         public async Task<Unit> Handle(DeleteTagDocumentCommand request, CancellationToken cancellationToken)
         {
             DocumentTag documentTag;
-            if (request.IsAdmin)
-            {
-                documentTag = await _documentTagRepository.Query
-                    .FirstOrDefaultAsync(x => x.Id == request.TagId);
-            }
-            else
-            {
-                documentTag = await _documentTagRepository.Query.Include(d=>d.Document)
-                    .FirstOrDefaultAsync(x => request.CompanyId.Contains(x.Document.CompanyId) && x.Id == request.DocumentId);
-            }
+
+            documentTag = await _documentTagRepository.Query
+                .FirstOrDefaultAsync(x => x.Id == request.TagId);
 
             if (documentTag == null)
             {

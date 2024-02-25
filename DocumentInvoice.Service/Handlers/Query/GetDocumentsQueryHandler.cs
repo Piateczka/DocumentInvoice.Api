@@ -22,13 +22,13 @@ public class GetDocumentsQueryHandler : IRequestHandler<GetDocumentsQuery, List<
     {
         List<DocumentResponse> documentsList = new List<DocumentResponse>();
         List<Document> documents = new List<Document>();
-        if (request.IsAdmin)
+        if (request.RBACInfo.IsAdminOrAccountant)
         {
             documents = await _documentRepository.Query.ToListAsync(cancellationToken);
         }
         else
         {
-            documents = await _documentRepository.Query.Where(x => request.CompanyId.Contains(x.CompanyId)).ToListAsync(cancellationToken);
+            documents = await _documentRepository.Query.Where(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId)).ToListAsync(cancellationToken);
         }
 
 

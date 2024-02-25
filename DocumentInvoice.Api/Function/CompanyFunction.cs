@@ -1,3 +1,4 @@
+using DocumentInvoice.Api.Extensions;
 using DocumentInvoice.Service.Command;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
@@ -9,7 +10,7 @@ using Newtonsoft.Json;
 using System.Net;
 
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Function
 {
     public class CompanyFunction
     {
@@ -33,25 +34,14 @@ namespace DocumentInvoice.Api
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(Unit), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
-        public async Task<HttpResponseData> CreateCompany([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "company")] HttpRequestData req,
-            FunctionContext context)
+        [Authorize(UserRoles = new[] { "Admin" })]
+        public async Task<HttpResponseData> CreateCompany([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "company")] HttpRequestData req)
         {
-            var response = req.CreateResponse();
-            if (!context.IsAuthenticated())
-            {
-                await response.WriteAsJsonAsync("Unauthorized access", HttpStatusCode.Unauthorized);
-                return response;
-            }
-
-            if (!context.IsAdmin())
-            {
-                return req.CreateResponse(HttpStatusCode.Forbidden);
-            }
-
             var requestBody = await req.ReadAsStringAsync();
 
             var request = JsonConvert.DeserializeObject<CreateCompanyCommand>(requestBody);
             var result = await _mediator.Send(request);
+            var response = req.CreateResponse();
             await response.WriteAsJsonAsync(result);
 
             return response;

@@ -5,7 +5,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Function
 {
     public class AutomaticFunction
     {
@@ -35,5 +35,5 @@ namespace DocumentInvoice.Api
             var request = JsonConvert.DeserializeObject<AnalysisDocumentCommand>(message.Body.ToString());
             await _mediator.Send(request);
         }
-}
+    }
 }

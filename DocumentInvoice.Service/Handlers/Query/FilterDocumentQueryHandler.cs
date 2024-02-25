@@ -49,9 +49,9 @@ namespace DocumentInvoice.Service.Handlers.Query
                 documents = documents.Concat(documentsByYear);
             }
 
-            if (!request.IsAdmin)
+            if (!request.RBACInfo.IsAdminOrAccountant)
             {
-                documents = documents.Where(x => request.CompanyId.Contains(x.CompanyId));
+                documents = documents.Where(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId));
             }
 
             var documentResponse = documents.Distinct().Select(x => new DocumentResponse

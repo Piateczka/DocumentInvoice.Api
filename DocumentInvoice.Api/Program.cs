@@ -1,6 +1,9 @@
 using Azure;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using DocumentInvoice.Api;
+using DocumentInvoice.Api.Extensions;
+using DocumentInvoice.Api.Middleware;
 using DocumentInvoice.Infrastructure;
 using DocumentInvoice.Infrastructure.Repository;
 using DocumentInvoice.Service.Handlers.Command;
@@ -13,13 +16,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.ApplicationInsights;
 
 var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults((hostContext, builder) =>
                 {
                     builder.UseNewtonsoftJson();
+
                     builder.UseWhen<AuthenticationMiddleware>(functionContext =>
+                    {
+                        return !functionContext.FunctionDefinition.Name.Contains("Swagger");
+                    });
+                    builder.UseWhen<AuthorizationMiddleware>(functionContext =>
                     {
                         return !functionContext.FunctionDefinition.Name.Contains("Swagger");
                     });
@@ -32,7 +39,7 @@ var host = new HostBuilder()
                         Environment.GetEnvironmentVariable("TenantId"),
                         Environment.GetEnvironmentVariable("ClientId"),
                         Environment.GetEnvironmentVariable("ClientSecret"));
-                    config.AddAzureKeyVault(new Uri(Environment.GetEnvironmentVariable("VaultUrl")), credential, new DottableKeyVaultSecretManager());
+                    config.AddAzureKeyVault(new Uri(Environment.GetEnvironmentVariable("VaultUrl")), credential, new KeyVaultSecretManager());
                 })
                 .ConfigureServices((context, services) =>
                 {
@@ -67,16 +74,6 @@ var host = new HostBuilder()
 
                          return options;
                      });
-
-                    //services.AddLogging(loggingBuilder =>
-                    //{
-                    //    loggingBuilder.ClearProviders();
-                    //    loggingBuilder.AddApplicationInsights(
-                    //        configureTelemetryConfiguration: (config) =>
-                    //            config.ConnectionString = applicationInsightsConnectionString,
-                    //            configureApplicationInsightsLoggerOptions: (options) => { }
-                    //        );
-                    //});
 
                     services.AddApplicationInsightsTelemetryWorkerService();
                     services.ConfigureFunctionsApplicationInsights();

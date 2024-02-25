@@ -6,7 +6,7 @@ using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.Logging;
 using System.Net;
 
-namespace DocumentInvoice.Api
+namespace DocumentInvoice.Api.Middleware
 {
     public class GlobalExceptionMiddleware : IFunctionsWorkerMiddleware
     {
