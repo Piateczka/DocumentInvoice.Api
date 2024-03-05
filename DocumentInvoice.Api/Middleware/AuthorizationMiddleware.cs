@@ -12,7 +12,10 @@ namespace DocumentInvoice.Api.Middleware
         {
             var internalCall = bool.Parse(context.Items["internalCall"].ToString());
             if (internalCall)
+            {
                 await next(context);
+                return;
+            }
 
             var role = context.Items["role"].ToString();
             if (role == null)

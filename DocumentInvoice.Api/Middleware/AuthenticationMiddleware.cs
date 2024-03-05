@@ -81,7 +81,8 @@ namespace DocumentInvoice.Api.Middleware
         private static bool IsHttpRequest(FunctionContext context)
         {
             // Assuming HTTP request triggers have "HttpRequest" binding data
-            return context.BindingContext.BindingData.ContainsKey("HttpRequest") || context.BindingContext.BindingData.ContainsKey("Headers");
+            return (context.BindingContext.BindingData.ContainsKey("HttpRequest") || context.BindingContext.BindingData.ContainsKey("Headers")) 
+                &&  !context.FunctionDefinition.Name.Contains("HealthCheckServiceFunction");
         }
 
         private static bool TryGetTokenFromHeaders(FunctionContext context, out string token)
