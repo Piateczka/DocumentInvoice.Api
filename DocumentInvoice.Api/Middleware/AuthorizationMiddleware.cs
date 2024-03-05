@@ -1,10 +1,8 @@
 ﻿using DocumentInvoice.Api.Extensions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Middleware;
-using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Security.Claims;
 
 namespace DocumentInvoice.Api.Middleware
 {
@@ -12,6 +10,10 @@ namespace DocumentInvoice.Api.Middleware
     {
         public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
         {
+            var internalCall = bool.Parse(context.Items["internalCall"].ToString());
+            if (internalCall)
+                await next(context);
+
             var role = context.Items["role"].ToString();
             if (role == null)
             {

@@ -37,6 +37,7 @@ namespace DocumentInvoice.Api.Middleware
                 }
                 try
                 {
+                    context.Items["internalCall"] = false;
                     var payload = await GoogleJsonWebSignature.ValidateAsync(token);
 
                     var user = _userRepository.Query
@@ -52,6 +53,7 @@ namespace DocumentInvoice.Api.Middleware
 
                     var isAdminOrAccountant = user.Role.Name == "Admin" || user.Role.Name == "Accountant";
                     var userCompanyIdList = user.UserAccessList.Select(x => x.CompanyId).ToList();
+                    context.Items["role"] = user.Role.Name;
                     context.Items["RBACInfo"] = new RBACInfo
                     {
                         IsAdminOrAccountant = isAdminOrAccountant,
@@ -69,6 +71,7 @@ namespace DocumentInvoice.Api.Middleware
             else
             {
                 // Do nothing for non-HTTP triggers (e.g., QueueTrigger)
+                context.Items["internalCall"] = true;
                 await next(context);
             }
 

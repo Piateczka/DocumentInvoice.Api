@@ -135,6 +135,7 @@ namespace DocumentInvoice.Api.Function
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentResponse>), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin", "Accountant" })]
         public async Task<HttpResponseData> GetListDocuments([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "documentList")] HttpRequestData req,
             FunctionContext context)
         {
@@ -160,6 +161,7 @@ namespace DocumentInvoice.Api.Function
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(DocumentResponse), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin", "Accountant" })]
         public async Task<HttpResponseData> GetDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/{id:int}")] HttpRequestData req, int id,
             FunctionContext context)
         {
@@ -281,6 +283,7 @@ namespace DocumentInvoice.Api.Function
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentResponse>), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin", "Accountant" })]
         public async Task<HttpResponseData> SearchDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/search")] HttpRequestData req,
             FunctionContext context)
         {
@@ -313,6 +316,7 @@ namespace DocumentInvoice.Api.Function
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(List<DocumentResponse>), Description = "The OK response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(string), Description = "The Unauthorized response")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.InternalServerError, contentType: "application/json", bodyType: typeof(string), Description = "Internal server error")]
+        [Authorize(UserRoles = new[] { "User", "Admin", "Accountant" })]
         public async Task<HttpResponseData> FilterDocument([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "document/filter")] HttpRequestData req,
             FunctionContext context)
         {
