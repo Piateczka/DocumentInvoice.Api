@@ -42,7 +42,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Creat
             Role = role
         };
 
-        if(role.Name != UserRole.Admin.ToString())
+        if(role.Name == UserRole.User.ToString())
         {
             var companies = await _companyRepo.Query.Where(x => request.CompaniesId.Contains(x.Id)).ToListAsync(cancellationToken);
 

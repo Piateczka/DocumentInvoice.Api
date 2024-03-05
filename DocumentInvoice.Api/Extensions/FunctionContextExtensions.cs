@@ -42,44 +42,6 @@ namespace DocumentInvoice.Api.Extensions
             var method = type.GetMethod(methodName);
             return method;
         }
-
-        public static bool IsAdmin(this FunctionContext context)
-        {
-            if (!context.Items.ContainsKey("role"))
-            {
-                return false;
-            }
-            if (context.Items["role"] is not string role)
-            {
-                return false;
-            }
-
-            return role == "Admin";
-        }
-
-        public static bool IsAccountant(this FunctionContext context)
-        {
-            if (!context.Items.ContainsKey("role"))
-            {
-                return false;
-            }
-            if (context.Items["role"] is not string role)
-            {
-                return false;
-            }
-
-            return role == "Accountant";
-        }
-
-        public static Users GetUserInfo(this FunctionContext context)
-        {
-            if (context.Items["user"] is not Users user)
-            {
-                return new Users();
-            }
-
-            return user;
-        }
     }
 }
 
