@@ -44,33 +44,35 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
             AnalyzeResult result = analyzeResult.Value;
             Invoices invoice = new Invoices();
             invoice.Document = document;
+            AnalyzedDocument analyzed = result.Documents[0];
+
+            if (analyzed.Fields.TryGetValue("VendorName", out DocumentField vendorNameField))
+            {
+                if (vendorNameField.FieldType == DocumentFieldType.String)
+                {
+                    invoice.VendorName = vendorNameField.Value.AsString();
+                }
+            }
+
+            if (analyzed.Fields.TryGetValue("CustomerName", out DocumentField customerNameField))
+            {
+                if (customerNameField.FieldType == DocumentFieldType.String)
+                {
+                    invoice.CustomerName = customerNameField.Value.AsString();
+                }
+            }
+
+            if (analyzed.Fields.TryGetValue("InvoiceId", out DocumentField customerInvoiceIdField))
+            {
+                if (customerInvoiceIdField.FieldType == DocumentFieldType.String)
+                {
+                    invoice.InvoiceNumber = customerInvoiceIdField.Value.AsString();
+                }
+            }
+
             for (int i = 0; i < result.Documents.Count; i++)
             {
                 AnalyzedDocument analyzedDocument = result.Documents[i];
-
-                if (analyzedDocument.Fields.TryGetValue("VendorName", out DocumentField vendorNameField))
-                {
-                    if (vendorNameField.FieldType == DocumentFieldType.String)
-                    {
-                        invoice.VendorName = vendorNameField.Value.AsString();
-                    }
-                }
-
-                if (analyzedDocument.Fields.TryGetValue("CustomerName", out DocumentField customerNameField))
-                {
-                    if (customerNameField.FieldType == DocumentFieldType.String)
-                    {
-                        invoice.CustomerName = customerNameField.Value.AsString();
-                    }
-                }
-
-                if (analyzedDocument.Fields.TryGetValue("InvoiceId", out DocumentField customerInvoiceIdField))
-                {
-                    if (customerInvoiceIdField.FieldType == DocumentFieldType.String)
-                    {
-                        invoice.InvoiceNumber = customerInvoiceIdField.Value.AsString();
-                    }
-                }
 
                 if (analyzedDocument.Fields.TryGetValue("Items", out DocumentField itemsField))
                 {
