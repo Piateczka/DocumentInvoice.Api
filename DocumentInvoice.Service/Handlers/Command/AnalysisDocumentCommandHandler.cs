@@ -14,6 +14,7 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
 {
     private readonly IRepositoryFactory<DocumentInvoiceContext> _repositoryFactory;
     private readonly IRepository<Invoices> _invoicesRepo;
+    private readonly IRepository<InvoiceItems> _invoiceItemsRepo;
     private readonly IRepository<Document> _documentRepo;
     private readonly BlobServiceClient _blobServiceClient;
     private readonly ApplicationSettings _configuration;
@@ -69,6 +70,8 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
                     invoice.InvoiceNumber = customerInvoiceIdField.Value.AsString();
                 }
             }
+            await _invoicesRepo.AddAsync(invoice, cancellationToken);
+            await _repositoryFactory.SaveChangesAsync(cancellationToken);
 
             for (int i = 0; i < result.Documents.Count; i++)
             {
@@ -76,13 +79,13 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
 
                 if (analyzedDocument.Fields.TryGetValue("Items", out DocumentField itemsField))
                 {
-                    invoice.InvoiceItems = new List<InvoiceItems>();
+
                     if (itemsField.FieldType == DocumentFieldType.List)
                     {
                         foreach (DocumentField itemField in itemsField.Value.AsList())
                         {
                             InvoiceItems invoiceItem = new InvoiceItems();
-                            Console.WriteLine("Item:");
+                            invoiceItem.Invoice = invoice;
 
                             if (itemField.FieldType == DocumentFieldType.Dictionary)
                             {
@@ -122,14 +125,14 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
                                     }
                                 }
                             }
-                            invoice.InvoiceItems.Add(invoiceItem);
+                            await _invoiceItemsRepo.AddAsync(invoiceItem, cancellationToken);
+                            await _repositoryFactory.SaveChangesAsync(cancellationToken);
                         }
                     }
                 }
             }
 
-            await _invoicesRepo.AddAsync(invoice, cancellationToken);
-            await _repositoryFactory.SaveChangesAsync(cancellationToken);
+
 
         }
 
