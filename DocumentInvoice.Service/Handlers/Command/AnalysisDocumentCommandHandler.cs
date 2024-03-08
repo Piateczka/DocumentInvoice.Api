@@ -23,6 +23,7 @@ public class AnalysisDocumentCommandHandler : IRequestHandler<AnalysisDocumentCo
     {
         _repositoryFactory = repositoryFactory;
         _invoicesRepo = _repositoryFactory.GetRepository<Invoices>();
+        _invoiceItemsRepo = _repositoryFactory.GetRepository<InvoiceItems>();
         _documentRepo = _repositoryFactory.GetRepository<Document>();
         _blobServiceClient = blobServiceClient;
         _configuration = configuration.Value;

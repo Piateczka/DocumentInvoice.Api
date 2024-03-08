@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 var host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults((hostContext, builder) =>
@@ -29,36 +30,38 @@ var host = new HostBuilder()
                     builder.UseWhen<AuthorizationMiddleware>(functionContext =>
                     {
                         return !functionContext.FunctionDefinition.Name.Contains("Swagger");
+                        //|| !functionContext.FunctionDefinition.Name.Contains("HealthCheckServiceFunction");
                     });
                     builder.UseMiddleware<GlobalExceptionMiddleware>();
                 })
                 .ConfigureOpenApi()
-                .ConfigureAppConfiguration((context, config) =>
+                .ConfigureAppConfiguration((context, configBuilder) =>
                 {
+                    //add provide to add Environment var
                     var credential = new ClientSecretCredential(
                         Environment.GetEnvironmentVariable("TenantId"),
                         Environment.GetEnvironmentVariable("ClientId"),
                         Environment.GetEnvironmentVariable("ClientSecret"));
-                    config.AddAzureKeyVault(new Uri(Environment.GetEnvironmentVariable("VaultUrl")), credential, new KeyVaultSecretManager());
+                    configBuilder.AddAzureKeyVault(new Uri(Environment.GetEnvironmentVariable("VaultUrl")), credential, new KeyVaultSecretManager());
                 })
                 .ConfigureServices((context, services) =>
                 {
-
-                    IConfiguration configuration = context.Configuration;
-                    var credential = new ClientSecretCredential(
-                        Environment.GetEnvironmentVariable("TenantId"),
-                        Environment.GetEnvironmentVariable("ClientId"),
-                        Environment.GetEnvironmentVariable("ClientSecret"));
-                    var blobConnectionString = configuration["ApplicationSettings:BlobConnectionString"];
-                    var applicationInsightsConnectionString = configuration["ApplicationSettings:ApplicationInsightsCs"];
-                    var dbConnectionString = configuration["ApplicationSettings:DbConnectionString"];
-                    var searchServiceEndpoint = configuration["ApplicationSettings:SearchServiceEndpoint"];
-                    var searchApiKey = configuration["ApplicationSettings:SearchApiKey"];
-                    var documentIndex = configuration["ApplicationSettings:DocumentIndex"];
                     services.AddAzureClients(options =>
                     {
+                        IConfiguration configuration = context.Configuration;
+                        var credential = new ClientSecretCredential(
+                            Environment.GetEnvironmentVariable("TenantId"),
+                            Environment.GetEnvironmentVariable("ClientId"),
+                            Environment.GetEnvironmentVariable("ClientSecret"));
+                        var blobConnectionString = configuration["ApplicationSettings:BlobConnectionString"];
+                        var applicationInsightsConnectionString = configuration["ApplicationSettings:ApplicationInsightsCs"];
+                        var dbConnectionString = configuration["ApplicationSettings:DbConnectionString"];
+                        var searchServiceEndpoint = configuration["ApplicationSettings:SearchServiceEndpoint"];
+                        var searchApiKey = configuration["ApplicationSettings:SearchApiKey"];
+                        var documentIndex = configuration["ApplicationSettings:DocumentIndex"];
                         options.UseCredential(credential);
                         options.AddSearchClient(new Uri(searchServiceEndpoint), documentIndex, new AzureKeyCredential(searchApiKey));
+                        options.AddSearchIndexClient(new Uri(searchServiceEndpoint), new AzureKeyCredential(searchApiKey));
                         options.AddBlobServiceClient(blobConnectionString);
                     });
 
@@ -89,8 +92,12 @@ var host = new HostBuilder()
                             options.Rules.Remove(toRemove);
                         }
                     });
-                    services.AddDbContext<DocumentInvoiceContext>(opt =>
-                                opt.UseSqlServer(dbConnectionString));
+
+                    services.AddDbContext<DocumentInvoiceContext>((service, options) =>
+                    {
+                        var configuration = service.GetRequiredService<IOptions<ApplicationSettings>>();
+                        options.UseSqlServer(configuration.Value.DbConnectionString);
+                    });
 
                     services.AddScoped(typeof(IRepositoryFactory<>), typeof(RepositoryFactory<>));
                     services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(

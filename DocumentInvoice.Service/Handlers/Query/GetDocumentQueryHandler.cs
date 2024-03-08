@@ -9,6 +9,7 @@ using DocumentInvoice.Service.Query;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography.X509Certificates;
 
 namespace DocumentInvoice.Service.Handlers.Query;
 
@@ -16,6 +17,7 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
 {
     private readonly IRepositoryFactory<DocumentInvoiceContext> _repository;
     private readonly IRepository<Document> _documentRepository;
+    private readonly IRepository<DocumentTag> _documentTagRepository;
     private readonly ApplicationSettings _configuration;
     private readonly BlobServiceClient _blobServiceClient;
 
@@ -23,6 +25,7 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
     {
         _repository = repository;
         _documentRepository = _repository.GetRepository<Document>();
+        _documentTagRepository = _repository.GetRepository<DocumentTag>();
         _configuration = configuration.Value;
         _blobServiceClient = blobServiceClient;
     }
@@ -30,16 +33,51 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
     {
 
         BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_configuration.ContainerName);
-        Document document = null;
+        DocumentResponse document = null;
         if (request.RBACInfo.IsAdminOrAccountant)
         {
-            document = await _documentRepository.Query.Include(x => x.Customer)
-                                .FirstOrDefaultAsync(x => x.Id == request.DocumentId);
+            document = await _documentRepository.Query.GroupJoin(
+                _documentTagRepository.Query,
+                x => x.Id,
+                y => y.Document.Id,
+                (x, y) => new { Document = x, Tags = y })
+                .Where(a => a.Document.Id == request.DocumentId)
+                    .Select(x => new DocumentResponse
+                    {
+                        Id = x.Document.Id,
+                        Commnet = x.Document.Comment,
+                        DocumentCategory = (Enums.DocumentCategory)x.Document.DocumentCategory,
+                        DocumentName = x.Document.DocumentName,
+                        DocumentStatus = (Enums.DocumentStatus)x.Document.DocumentStatus,
+                        ContainerName = x.Document.Container,
+                        Tags = x.Tags.Where(t=>t.IsActive).Select(x => new TagResponse
+                        {
+                            Tag = x.Tag,
+                            TagId = x.Id
+                        }).ToArray()
+                    }).FirstOrDefaultAsync(cancellationToken);
         }
         else
         {
-            document = await _documentRepository.Query.Include(x => x.Customer)
-                    .FirstOrDefaultAsync(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId) && x.Id == request.DocumentId);
+            document = await _documentRepository.Query.GroupJoin(
+                _documentTagRepository.Query,
+                x => x.Id,
+                y => y.Document.Id,
+                (x, y) => new { Document = x, Tags = y })
+                .Where(a => request.RBACInfo.UserCompanyIdList.Contains(a.Document.Id) && a.Document.Id == request.DocumentId).Select(x => new DocumentResponse
+                {
+                    Id = x.Document.Id,
+                    Commnet = x.Document.Comment,
+                    DocumentCategory = (Enums.DocumentCategory)x.Document.DocumentCategory,
+                    DocumentName = x.Document.DocumentName,
+                    DocumentStatus = (Enums.DocumentStatus)x.Document.DocumentStatus,
+                    ContainerName = x.Document.Container,
+                    Tags = x.Tags.Where(t => t.IsActive).Select(x => new TagResponse
+                    {
+                        Tag = x.Tag,
+                        TagId = x.Id
+                    }).ToArray()
+                }).FirstOrDefaultAsync(cancellationToken);
         }
 
         if (document == null)
@@ -49,7 +87,7 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
 
         BlobSasBuilder sasBuilder = new BlobSasBuilder()
         {
-            BlobContainerName = document.Customer.ContainerName,
+            BlobContainerName = document.ContainerName,
             BlobName = document.DocumentName,
             Resource = "b",
             StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
@@ -63,19 +101,11 @@ public class GetDocumentQueryHandler : IRequestHandler<GetDocumentQuery, Documen
         {
             Scheme = "https",
             Host = string.Format("upskillsa.blob.core.windows.net"),
-            Path = string.Format("{0}/{1}", document.Customer.Name.Replace(" ", "").ToLower(), document.DocumentName),
+            Path = string.Format("{0}/{1}", document.ContainerName.ToLower(), document.DocumentName),
             Query = sasToken
         };
 
-        return new DocumentResponse
-        {
-            Id = document.Id,
-            DocumentCategory = (Enums.DocumentCategory)document.DocumentCategory,
-            DocumentStatus = (Enums.DocumentStatus)document.DocumentStatus,
-            Commnet = document.Comment,
-            DocumentName = document.DocumentName,
-            Url = fulluri.Uri.ToString(),
-        };
+        return document;
 
     }
 }

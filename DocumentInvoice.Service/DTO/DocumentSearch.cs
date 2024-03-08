@@ -7,8 +7,6 @@ namespace DocumentInvoice.Service.DTO;
 
 public class DocumentSearch
 {
-    [JsonPropertyName("id")]
-    [SimpleField]
-    public string Id { get; set; }
-    public int DocumentId { get; set; }
+    [JsonPropertyName("DcoumentId")]
+    public int Id { get; set; }
 }

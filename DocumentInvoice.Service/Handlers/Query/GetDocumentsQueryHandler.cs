@@ -12,38 +12,62 @@ public class GetDocumentsQueryHandler : IRequestHandler<GetDocumentsQuery, List<
 {
     private readonly IRepositoryFactory<DocumentInvoiceContext> _repository;
     private readonly IRepository<Document> _documentRepository;
+    private readonly IRepository<DocumentTag> _documentTagRepository;
 
     public GetDocumentsQueryHandler(IRepositoryFactory<DocumentInvoiceContext> repository)
     {
         _repository = repository;
         _documentRepository = _repository.GetRepository<Document>();
+        _documentTagRepository = _repository.GetRepository<DocumentTag>();
     }
     public async Task<List<DocumentResponse>> Handle(GetDocumentsQuery request, CancellationToken cancellationToken)
     {
-        List<DocumentResponse> documentsList = new List<DocumentResponse>();
-        List<Document> documents = new List<Document>();
+        List<DocumentResponse> documents = new List<DocumentResponse>();
         if (request.RBACInfo.IsAdminOrAccountant)
         {
-            documents = await _documentRepository.Query.ToListAsync(cancellationToken);
+            documents = await _documentRepository.Query.GroupJoin(
+                _documentTagRepository.Query,
+                x => x.Id,
+                y => y.Document.Id,
+                (x, y) => new { Document = x, Tags = y })
+                .Select(x => new DocumentResponse
+                {
+                    Id = x.Document.Id,
+                    Commnet = x.Document.Comment,
+                    DocumentCategory = (Enums.DocumentCategory)x.Document.DocumentCategory,
+                    DocumentName = x.Document.DocumentName,
+                    DocumentStatus = (Enums.DocumentStatus)x.Document.DocumentStatus,
+                    ContainerName = x.Document.Container,
+                    Tags = x.Tags.Where(t => t.IsActive).Select(x => new TagResponse
+                    {
+                        Tag = x.Tag,
+                        TagId = x.Id
+                    }).ToArray()
+                }).ToListAsync(cancellationToken);
         }
         else
         {
-            documents = await _documentRepository.Query.Where(x => request.RBACInfo.UserCompanyIdList.Contains(x.CompanyId)).ToListAsync(cancellationToken);
+            documents = await _documentRepository.Query.GroupJoin(
+                _documentTagRepository.Query,
+                x => x.Id,
+                y => y.Document.Id,
+                (x, y) => new { Document = x, Tags = y })
+                .Where(a => request.RBACInfo.UserCompanyIdList.Contains(a.Document.Id)).Select(x => new DocumentResponse
+                {
+                    Id = x.Document.Id,
+                    Commnet = x.Document.Comment,
+                    DocumentCategory = (Enums.DocumentCategory)x.Document.DocumentCategory,
+                    DocumentName = x.Document.DocumentName,
+                    DocumentStatus = (Enums.DocumentStatus)x.Document.DocumentStatus,
+                    ContainerName = x.Document.Container,
+                    Tags = x.Tags.Where(t => t.IsActive).Select(x => new TagResponse
+                    {
+                        Tag = x.Tag,
+                        TagId = x.Id
+                    }).ToArray()
+                }).ToListAsync(cancellationToken);
         }
 
-
-        foreach (var document in documents)
-        {
-            documentsList.Add(new DocumentResponse
-            {
-                Id = document.Id,
-                DocumentName = document.DocumentName,
-                DocumentCategory = (Enums.DocumentCategory)document.DocumentCategory,
-                DocumentStatus = (Enums.DocumentStatus)document.DocumentStatus,
-                Commnet = document.Comment
-            });
-        }
-
-        return documentsList;
+        return documents;
     }
 }

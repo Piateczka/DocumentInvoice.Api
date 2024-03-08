@@ -10,5 +10,6 @@ public class DocumentResponse
     public DocumentStatus? DocumentStatus { get; set; }
     public string? Commnet { get; set; }
     public string? Url { get; set; }
-    public string[]? Tags { get; set; }
+    public string? ContainerName { get; set; }
+    public TagResponse[]? Tags { get; set; }
 }

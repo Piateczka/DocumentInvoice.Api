@@ -35,12 +35,13 @@ namespace DocumentInvoice.Service.Handlers.Command
                 tags.Add(new DocumentTag
                 {
                     Document = document,
-                    Tag = tag
+                    Tag = tag,
+                    IsActive = true
                 });
             }
 
-           await _documentTagRepository.AddRangeAsync(tags, cancellationToken);
-           await _repository.SaveChangesAsync(cancellationToken);
+            await _documentTagRepository.AddRangeAsync(tags, cancellationToken);
+            await _repository.SaveChangesAsync(cancellationToken);
 
             return new DocumentResponse
             {
@@ -49,7 +50,11 @@ namespace DocumentInvoice.Service.Handlers.Command
                 DocumentCategory = (DocumentCategory)document.DocumentCategory,
                 DocumentName = document.DocumentName,
                 DocumentStatus = (DocumentStatus)document.DocumentStatus,
-                Tags = request.Tags
+                Tags = tags.Select(x => new TagResponse
+                {
+                    Tag = x.Tag,
+                    TagId = x.Id
+                }).ToArray()
             };
         }
     }

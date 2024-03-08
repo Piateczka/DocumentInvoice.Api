@@ -8,4 +8,5 @@ public class ApplicationSettings
     public string ContainerName { get; set; }
     public string FormRecognizerKey { get; set; }
     public string FormRecognizerEndpoint { get; set; }
+    public string DocumentIndex { get; set; }
 }
