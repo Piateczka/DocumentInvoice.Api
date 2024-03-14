@@ -25,19 +25,23 @@ var host = new HostBuilder()
 
                     builder.UseWhen<AuthenticationMiddleware>(functionContext =>
                     {
-                        return !functionContext.FunctionDefinition.Name.Contains("Swagger");
+                        return !functionContext.FunctionDefinition.Name.Contains("Swagger")
+                        && !functionContext.FunctionDefinition.Name.Contains("HealthCheckServiceFunction")
+                        && !functionContext.FunctionDefinition.Name.Contains("DocumentProcess")
+                        && !functionContext.FunctionDefinition.Name.Contains("DocumentAnalysis");
                     });
                     builder.UseWhen<AuthorizationMiddleware>(functionContext =>
                     {
-                        return !functionContext.FunctionDefinition.Name.Contains("Swagger");
-                        //|| !functionContext.FunctionDefinition.Name.Contains("HealthCheckServiceFunction");
+                        return !functionContext.FunctionDefinition.Name.Contains("Swagger")
+                        && !functionContext.FunctionDefinition.Name.Contains("HealthCheckServiceFunction")
+                        && !functionContext.FunctionDefinition.Name.Contains("DocumentProcess")
+                        && !functionContext.FunctionDefinition.Name.Contains("DocumentAnalysis");
                     });
                     builder.UseMiddleware<GlobalExceptionMiddleware>();
                 })
                 .ConfigureOpenApi()
                 .ConfigureAppConfiguration((context, configBuilder) =>
                 {
-                    //add provide to add Environment var
                     var credential = new ClientSecretCredential(
                         Environment.GetEnvironmentVariable("TenantId"),
                         Environment.GetEnvironmentVariable("ClientId"),

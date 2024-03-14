@@ -10,12 +10,6 @@ namespace DocumentInvoice.Api.Middleware
     {
         public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
         {
-            var internalCall = bool.Parse(context.Items["internalCall"].ToString());
-            if (internalCall)
-            {
-                await next(context);
-                return;
-            }
 
             var role = context.Items["role"].ToString();
             if (role == null)

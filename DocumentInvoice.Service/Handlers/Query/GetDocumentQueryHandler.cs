@@ -9,7 +9,6 @@ using DocumentInvoice.Service.Query;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using System.Security.Cryptography.X509Certificates;
 
 namespace DocumentInvoice.Service.Handlers.Query;
 

@@ -37,7 +37,6 @@ namespace DocumentInvoice.Api.Middleware
                 }
                 try
                 {
-                    context.Items["internalCall"] = false;
                     var payload = await GoogleJsonWebSignature.ValidateAsync(token);
 
                     var user = _userRepository.Query
@@ -70,8 +69,6 @@ namespace DocumentInvoice.Api.Middleware
             }
             else
             {
-                // Do nothing for non-HTTP triggers (e.g., QueueTrigger)
-                context.Items["internalCall"] = true;
                 await next(context);
             }
 

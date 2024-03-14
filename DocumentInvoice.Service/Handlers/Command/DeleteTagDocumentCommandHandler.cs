@@ -15,15 +15,11 @@ namespace DocumentInvoice.Service.Handlers.Command
     {
         private readonly IRepositoryFactory<DocumentInvoiceContext> _repository;
         private readonly IRepository<DocumentTag> _documentTagRepository;
-        //private readonly SearchIndexClient indexerClient;
-        //private readonly ApplicationSettings _configuration;
 
-        public DeleteTagDocumentCommandHandler(IRepositoryFactory<DocumentInvoiceContext> repository, SearchIndexClient searchIndexClient, IOptions<ApplicationSettings> configuration)
+        public DeleteTagDocumentCommandHandler(IRepositoryFactory<DocumentInvoiceContext> repository)
         {
             _repository = repository;
             _documentTagRepository = _repository.GetRepository<DocumentTag>();
-            //indexerClient = searchIndexClient;
-            //_configuration = configuration.Value;
         }
         public async Task<Unit> Handle(DeleteTagDocumentCommand request, CancellationToken cancellationToken)
         {
